@@ -135,11 +135,8 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
   }
 }
 
-///[ChuckerFlutter] is a helper class to initialize the library
-///
-///[chuckerButton] and notifications only be visible in debug mode
 class ChuckerFlutter {
-  /// Private static instance of the custom navigator observer
+  /// Static instance of the custom navigator observer
   static final ChuckerNavigatorObserver _navigatorObserver =
       ChuckerNavigatorObserver();
 

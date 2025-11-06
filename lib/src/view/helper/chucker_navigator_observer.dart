@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 /// Custom NavigatorObserver for Chucker Flutter that properly manages
 /// navigation state and provides context for HTTP request tracking
 class ChuckerNavigatorObserver extends NavigatorObserver {
-  NavigatorState? _navigator;
+  static NavigatorState? _mainNavigator;
   String? _currentRoute;
   final List<String> _routeHistory = [];
 
-  /// Get the current navigator instance
-  NavigatorState? get navigator => _navigator;
+  /// Get the main app navigator instance
+  NavigatorState? get navigator => _mainNavigator;
 
   /// Get the current route name
   String? get currentRoute => _currentRoute;
@@ -20,14 +20,14 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
-    _updateNavigatorReference();
+    _updateMainNavigatorReference();
     _trackRouteChange(route, 'push');
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPop(route, previousRoute);
-    _updateNavigatorReference();
+    _updateMainNavigatorReference();
     if (previousRoute != null) {
       _trackRouteChange(previousRoute, 'pop');
     }
@@ -36,7 +36,7 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    _updateNavigatorReference();
+    _updateMainNavigatorReference();
     if (newRoute != null) {
       _trackRouteChange(newRoute, 'replace');
     }
@@ -45,16 +45,20 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didRemove(route, previousRoute);
-    _updateNavigatorReference();
+    _updateMainNavigatorReference();
     if (previousRoute != null) {
       _trackRouteChange(previousRoute, 'remove');
     }
   }
 
-  /// @rishabh::: Update the navigator reference from the current navigation stack
-  void _updateNavigatorReference() {
-    // Use the inherited navigator property from NavigatorObserver
-    _navigator = super.navigator;
+  /// Update the main navigator reference (only store the first/main navigator)
+  void _updateMainNavigatorReference() {
+    // Only set the main navigator if it's not already set
+    // This ensures we use the main app navigator, not sub-navigators
+    if (_mainNavigator == null && super.navigator != null) {
+      _mainNavigator = super.navigator;
+      debugPrint('ChuckerFlutter: Main navigator reference established');
+    }
   }
 
   /// Track route changes for HTTP request context
@@ -93,5 +97,10 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
       'routeHistory': _routeHistory,
       'timestamp': DateTime.now().toIso8601String(),
     };
+  }
+
+  /// Reset the navigator reference (useful for testing or app restart)
+  static void resetNavigator() {
+    _mainNavigator = null;
   }
 }
