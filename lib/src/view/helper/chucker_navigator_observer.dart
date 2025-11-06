@@ -51,11 +51,10 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
     }
   }
 
-  /// Update the navigator reference from the current navigation stack
+  /// @rishabh::: Update the navigator reference from the current navigation stack
   void _updateNavigatorReference() {
-    if (navigator != null) {
-      _navigator = navigator;
-    }
+    // Use the inherited navigator property from NavigatorObserver
+    _navigator = super.navigator;
   }
 
   /// Track route changes for HTTP request context

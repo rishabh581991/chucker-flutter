@@ -99,11 +99,22 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
     _overlayEntries.clear();
   }
 
-  ///[showChuckerScreen] shows the screen containing the list of recored
+  /// @rishabh::: [showChuckerScreen] shows the screen containing the list of recored
   ///api requests
   static void showChuckerScreen() {
     SharedPreferencesManager.getInstance().getSettings();
-    ChuckerFlutter.navigatorObserver.navigator!.push(
+    final navigator = ChuckerFlutter.navigatorObserver.navigator;
+    if (navigator == null) {
+      debugPrint(
+        '''
+  ChuckerFlutter: Navigator is null. Make sure ChuckerFlutter.navigatorObserver is properly added to your MaterialApp's navigatorObservers 
+  and that navigation has occurred at least once.
+        ''',
+      );
+      return;
+    }
+
+    navigator.push(
       MaterialPageRoute<void>(
         builder: (context) => MaterialApp(
           key: const Key('chucker_material_app'),
