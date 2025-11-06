@@ -1,6 +1,7 @@
 import 'package:chopper/chopper.dart';
 import 'package:chucker_flutter/chucker_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' show MultipartFile;
 
 part 'chopper_service.chopper.dart';
 

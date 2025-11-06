@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'chopper_service.dart';
@@ -6,15 +7,16 @@ part of 'chopper_service.dart';
 // ChopperGenerator
 // **************************************************************************
 
-// ignore_for_file: always_put_control_body_on_new_line, always_specify_types, prefer_const_declarations, unnecessary_brace_in_string_interps
-class _$ChopperApiService extends ChopperApiService {
+// coverage:ignore-file
+// ignore_for_file: type=lint
+final class _$ChopperApiService extends ChopperApiService {
   _$ChopperApiService([ChopperClient? client]) {
     if (client == null) return;
     this.client = client;
   }
 
   @override
-  final definitionType = ChopperApiService;
+  final Type definitionType = ChopperApiService;
 
   @override
   Future<Response<dynamic>> get() {
@@ -102,7 +104,7 @@ class _$ChopperApiService extends ChopperApiService {
 
   @override
   Future<Response<dynamic>> imageUpload(
-    http.MultipartFile body, {
+    MultipartFile body, {
     String key = '6d207e02198a847aa98d0a2a901485a5',
   }) {
     final Uri $url = Uri.parse('https://freeimage.host/api/1/upload');
@@ -111,7 +113,7 @@ class _$ChopperApiService extends ChopperApiService {
         'key',
         key,
       ),
-      PartValueFile<http.MultipartFile>(
+      PartValueFile<MultipartFile>(
         'source',
         body,
       ),
