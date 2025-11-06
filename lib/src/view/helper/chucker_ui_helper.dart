@@ -4,6 +4,7 @@ import 'package:chucker_flutter/src/localization/localization.dart';
 import 'package:chucker_flutter/src/models/settings.dart';
 import 'package:chucker_flutter/src/view/chucker_page.dart';
 import 'package:chucker_flutter/src/view/helper/chucker_button.dart';
+import 'package:chucker_flutter/src/view/helper/chucker_navigator_observer.dart';
 import 'package:chucker_flutter/src/view/helper/colors.dart';
 import 'package:chucker_flutter/src/view/widgets/notification.dart'
     as notification;
@@ -127,6 +128,54 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
 ///
 ///[chuckerButton] and notifications only be visible in debug mode
 class ChuckerFlutter {
+  /// Private static instance of the custom navigator observer
+  static final ChuckerNavigatorObserver _navigatorObserver =
+      ChuckerNavigatorObserver();
+
+  ///[navigatorObserver] observes the navigation of your app. It must be
+  ///referenced in your MaterialApp widget
+  static ChuckerNavigatorObserver get navigatorObserver => _navigatorObserver;
+
+  ///[showOnRelease] decides whether to allow Chucker Flutter working in release
+  ///mode or not.
+  ///By default its value is `false`
+  static bool showOnRelease = false;
+
+  ///[isDebugMode] A wrapper of Flutter's `kDebugMode` constant
+  static bool isDebugMode = kDebugMode;
+
+  ///[showNotification] decides whether to show in app notification or not
+  ///By default its value is `true`
+  static bool showNotification = true;
+
+  ///[ChuckerButton] can be placed anywhere in the UI to open Chucker Screen
+  static final chuckerButton = isDebugMode || ChuckerFlutter.showOnRelease
+      ? ChuckerButton.getInstance()
+      : const SizedBox.shrink();
+
+  ///[showChuckerScreen] navigates to the chucker home screen
+  static void showChuckerScreen() => ChuckerUiHelper.showChuckerScreen();
+
+  /// Get current navigation context for HTTP request tracking
+  static Map<String, dynamic> getNavigationContext() {
+    return _navigatorObserver.getNavigationContext();
+  }
+
+  /// Get current route name
+  static String? getCurrentRoute() {
+    return _navigatorObserver.currentRoute;
+  }
+
+  /// Get navigation history
+  static List<String> getNavigationHistory() {
+    return _navigatorObserver.routeHistory;
+  }
+}
+
+/*///[ChuckerFlutter] is a helper class to initialize the library
+///
+///[chuckerButton] and notifications only be visible in debug mode
+class ChuckerFlutter {
   ///[navigatorObserver] observes the navigation of your app. It must be
   ///referenced in your MaterialApp widget
   static final navigatorObserver = NavigatorObserver();
@@ -150,4 +199,4 @@ class ChuckerFlutter {
 
   ///[showChuckerScreen] navigates to the chucker home screen
   static void showChuckerScreen() => ChuckerUiHelper.showChuckerScreen();
-}
+}*/
