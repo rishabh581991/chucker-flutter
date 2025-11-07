@@ -1,10 +1,8 @@
-import 'package:chucker_flutter/src/helpers/extensions.dart';
 import 'package:chucker_flutter/src/helpers/shared_preferences_manager.dart';
 import 'package:chucker_flutter/src/localization/localization.dart';
 import 'package:chucker_flutter/src/models/settings.dart';
 import 'package:chucker_flutter/src/view/chucker_page.dart';
 import 'package:chucker_flutter/src/view/helper/chucker_button.dart';
-import 'package:chucker_flutter/src/view/helper/chucker_navigator_observer.dart';
 import 'package:chucker_flutter/src/view/helper/colors.dart';
 import 'package:chucker_flutter/src/view/widgets/notification.dart'
     as notification;
@@ -43,10 +41,12 @@ ChuckerFlutter: Your notification setting is off. You can turn it on by visiting
       );
       return false;
     }
-    if (ChuckerFlutter.navigatorObserver.navigator == null) {
+    // Try to get navigator for overlay - use dual navigation system
+    final navigator = ChuckerFlutter._navigator;
+    if (navigator == null) {
       debugPrint(
         '''
-ChuckerFlutter: You didn't add ChuckerFlutter.navigatorObserver in your material app. Visit https://github.com/syedmurtaza108/chucker-flutter#getting-started for Chucker Integration details.
+ChuckerFlutter: No navigator available. Either add ChuckerFlutter.navigatorObserver to your MaterialApp or call ChuckerFlutter.initialize() after your app starts.
         ''',
       );
       return false;
@@ -60,7 +60,7 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
       return false;
     }
 
-    final overlay = ChuckerFlutter.navigatorObserver.navigator!.overlay;
+    final overlay = navigator.overlay;
     final entry = _createOverlayEntry(method, statusCode, path, requestTime);
     _overlayEntries.add(entry);
     overlay?.insert(entry);
@@ -103,12 +103,12 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
   ///api requests
   static void showChuckerScreen() {
     SharedPreferencesManager.getInstance().getSettings();
-    final navigator = ChuckerFlutter.navigatorObserver.navigator;
+    final navigator = ChuckerFlutter._navigator;
     if (navigator == null) {
       debugPrint(
         '''
-  ChuckerFlutter: Navigator is null. Make sure ChuckerFlutter.navigatorObserver is properly added to your MaterialApp's navigatorObservers 
-  and that navigation has occurred at least once.
+  ChuckerFlutter: Navigator is null. Make sure ChuckerFlutter.initialize() is called in your app 
+  or that navigation context is available.
         ''',
       );
       return;
@@ -135,14 +135,19 @@ ChuckerFlutter: You programmatically vetoed notification behavior. Make sure to 
   }
 }
 
+///[ChuckerFlutter] is a helper class to initialize the library
+///
+///[chuckerButton] and notifications only be visible in debug mode
 class ChuckerFlutter {
-  /// Static instance of the custom navigator observer
-  static final ChuckerNavigatorObserver _navigatorObserver =
-      ChuckerNavigatorObserver();
+  // Store navigation context without using NavigatorObserver
+  static NavigatorState? _mainNavigator;
+  static BuildContext? _buttonContext;
+  static String? _currentRoute;
+  static final List<String> _routeHistory = [];
 
-  ///[navigatorObserver] observes the navigation of your app. It must be
-  ///referenced in your MaterialApp widget
-  static ChuckerNavigatorObserver get navigatorObserver => _navigatorObserver;
+  ///[navigatorObserver] - DEPRECATED: Returns null to avoid navigator conflicts with auto_route
+  ///For compatibility, this returns null to avoid navigator conflicts
+  static NavigatorObserver? get navigatorObserver => null;
 
   ///[showOnRelease] decides whether to allow Chucker Flutter working in release
   ///mode or not.
@@ -164,19 +169,93 @@ class ChuckerFlutter {
   ///[showChuckerScreen] navigates to the chucker home screen
   static void showChuckerScreen() => ChuckerUiHelper.showChuckerScreen();
 
+  /// Initialize ChuckerFlutter with the main navigator context
+  /// Call this once in your main app after MaterialApp is created
+  static void initialize(BuildContext context) {
+    final navigator = Navigator.of(context);
+    setMainNavigator(navigator);
+  }
+
+  // Internal methods to manage global state
+  static void setMainNavigator(NavigatorState? navigator) {
+    if (_mainNavigator == null && navigator != null) {
+      _mainNavigator = navigator;
+      debugPrint('ChuckerFlutter: Main navigator reference established');
+    }
+  }
+
+  static NavigatorState? get _navigator {
+    // Try to get the navigator from multiple sources
+    if (_mainNavigator != null) {
+      return _mainNavigator;
+    }
+
+    // Try to get from stored button context if available
+    if (_buttonContext != null) {
+      try {
+        return Navigator.of(_buttonContext!);
+      } catch (e) {
+        debugPrint('ChuckerFlutter: Could not get navigator from button context: $e');
+      }
+    }
+
+    // Try to get from current overlay context
+    try {
+      final overlay = WidgetsBinding.instance.rootElement;
+      if (overlay != null) {
+        final navigator = Navigator.maybeOf(overlay);
+        if (navigator != null) {
+          return navigator;
+        }
+      }
+    } catch (e) {
+      debugPrint('ChuckerFlutter: Could not find navigator from overlay: $e');
+    }
+
+    // Last fallback: try to get from global navigator key if available
+    try {
+      final context = WidgetsBinding.instance.rootElement;
+      if (context != null) {
+        return Navigator.of(context, rootNavigator: true);
+      }
+    } catch (e) {
+      debugPrint('ChuckerFlutter: Could not find navigator context: $e');
+    }
+
+    return null;
+  }
+
+  // Public getter for the navigator
+  static NavigatorState? get mainNavigator => _navigator;
+
+  static void updateRoute(String? route, String action) {
+    _currentRoute = route;
+    _routeHistory.insert(0, '$action: ${route ?? "Unknown"}');
+    if (_routeHistory.length > 10) {
+      _routeHistory.removeLast();
+    }
+    debugPrint('ChuckerFlutter: Navigation $action - $route');
+  }
+
   /// Get current navigation context for HTTP request tracking
   static Map<String, dynamic> getNavigationContext() {
-    return _navigatorObserver.getNavigationContext();
+    return {
+      'currentRoute': _currentRoute ?? 'Unknown',
+      'routeHistory': _routeHistory,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
   }
 
   /// Get current route name
-  static String? getCurrentRoute() {
-    return _navigatorObserver.currentRoute;
-  }
+  static String? getCurrentRoute() => _currentRoute;
 
   /// Get navigation history
-  static List<String> getNavigationHistory() {
-    return _navigatorObserver.routeHistory;
+  static List<String> getNavigationHistory() =>
+      List.unmodifiable(_routeHistory);
+  
+  /// Store button context for navigation fallback
+  static void setButtonContext(BuildContext? context) {
+    _buttonContext = context;
   }
 }
 

@@ -164,7 +164,8 @@ class _NotificationState extends State<Notification>
     final api = await SharedPreferencesManager.getInstance().getApiResponse(
       widget.requestTime,
     );
-    await ChuckerFlutter.navigatorObserver.navigator?.push(
+    final navigator = ChuckerFlutter.mainNavigator;
+    await navigator?.push(
       MaterialPageRoute<dynamic>(
         builder: (_) => Theme(
           data: ThemeData.light(useMaterial3: false),

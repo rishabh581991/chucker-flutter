@@ -1,21 +1,20 @@
 import 'package:chucker_flutter/src/helpers/shared_preferences_manager.dart';
+import 'package:chucker_flutter/src/view/helper/chucker_ui_helper.dart';
 import 'package:flutter/material.dart';
 
 /// Custom NavigatorObserver for Chucker Flutter that properly manages
 /// navigation state and provides context for HTTP request tracking
+///
+/// Each instance is independent but reports to shared global state
 class ChuckerNavigatorObserver extends NavigatorObserver {
-  static NavigatorState? _mainNavigator;
-  String? _currentRoute;
-  final List<String> _routeHistory = [];
+  /// Get the main app navigator instance (from global state)
+  NavigatorState? get navigator => ChuckerFlutter.mainNavigator;
 
-  /// Get the main app navigator instance
-  NavigatorState? get navigator => _mainNavigator;
+  /// Get the current route name (from global state)
+  String? get currentRoute => ChuckerFlutter.getCurrentRoute();
 
-  /// Get the current route name
-  String? get currentRoute => _currentRoute;
-
-  /// Get navigation history
-  List<String> get routeHistory => List.unmodifiable(_routeHistory);
+  /// Get navigation history (from global state)
+  List<String> get routeHistory => ChuckerFlutter.getNavigationHistory();
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -51,29 +50,15 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
     }
   }
 
-  /// Update the main navigator reference (only store the first/main navigator)
+  /// Update the main navigator reference (delegates to global state)
   void _updateMainNavigatorReference() {
-    // Only set the main navigator if it's not already set
-    // This ensures we use the main app navigator, not sub-navigators
-    if (_mainNavigator == null && super.navigator != null) {
-      _mainNavigator = super.navigator;
-      debugPrint('ChuckerFlutter: Main navigator reference established');
-    }
+    ChuckerFlutter.setMainNavigator(super.navigator);
   }
 
-  /// Track route changes for HTTP request context
+  /// Track route changes for HTTP request context (delegates to global state)
   void _trackRouteChange(Route<dynamic> route, String action) {
     final routeName = route.settings.name ?? 'Unknown Route';
-    _currentRoute = routeName;
-
-    // Add to history (keep last 10 routes)
-    _routeHistory.insert(0, '$action: $routeName');
-    if (_routeHistory.length > 10) {
-      _routeHistory.removeLast();
-    }
-
-    // Log navigation for debugging
-    debugPrint('ChuckerFlutter: Navigation $action - $routeName');
+    ChuckerFlutter.updateRoute(routeName, action);
 
     // Store current route in shared preferences for HTTP request context
     _storeCurrentRoute(routeName);
@@ -90,17 +75,8 @@ class ChuckerNavigatorObserver extends NavigatorObserver {
     }
   }
 
-  /// Get navigation context for HTTP requests
+  /// Get navigation context for HTTP requests (delegates to global state)
   Map<String, dynamic> getNavigationContext() {
-    return {
-      'currentRoute': _currentRoute ?? 'Unknown',
-      'routeHistory': _routeHistory,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-  }
-
-  /// Reset the navigator reference (useful for testing or app restart)
-  static void resetNavigator() {
-    _mainNavigator = null;
+    return ChuckerFlutter.getNavigationContext();
   }
 }

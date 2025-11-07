@@ -19,7 +19,10 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      navigatorObservers: [ChuckerFlutter.navigatorObserver],
+      navigatorObservers: [
+        if (ChuckerFlutter.navigatorObserver != null)
+          ChuckerFlutter.navigatorObserver!,
+      ],
       theme: ThemeData(
         appBarTheme: const AppBarTheme(color: Color(0xFF13B9FF)),
         colorScheme: ColorScheme.fromSwatch(

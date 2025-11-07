@@ -17,6 +17,9 @@ class ChuckerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Store button context for navigation fallback
+    ChuckerFlutter.setButtonContext(context);
+    
     return const PrimaryButton(
       text: 'Open Chucker Flutter',
       foreColor: Colors.white,
